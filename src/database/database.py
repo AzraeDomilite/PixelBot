@@ -46,14 +46,33 @@ class Database:
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
-
+                    
+                    CREATE TABLE IF NOT EXISTS votes (
+                        id SERIAL PRIMARY KEY,
+                        title VARCHAR(255) NOT NULL,
+                        image_name VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        image_url VARCHAR(512),
+                        json_data JSONB,
+                        channel_id BIGINT,
+                        message_id BIGINT,
+                        created_by BIGINT NOT NULL,
+                        coord_x INTEGER,           -- Ajout de cette colonne
+                        coord_z INTEGER,           -- Ajout de cette colonne
+                        vote_count INT DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        is_active BOOLEAN DEFAULT true
+                    );
+                    
                     CREATE INDEX IF NOT EXISTS idx_user_tokens_discord_user_id 
                         ON user_tokens(discord_user_id);
-                        
+                    
                     CREATE INDEX IF NOT EXISTS idx_user_tokens_valid_token 
                         ON user_tokens(valid_token);
                 """)
-            logger.info("Base de données initialisée avec succès")
+                logger.info("Base de données initialisée avec succès")
+                
         except Exception as e:
             logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
             raise

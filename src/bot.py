@@ -73,7 +73,8 @@ class PixelBot(commands.Bot):
             extensions = [
                 "src.cogs.tokens",
                 "src.cogs.chat",
-                "src.cogs.admin"
+                "src.cogs.admin",
+                "src.cogs.votes"
             ]
             
             for extension in extensions:

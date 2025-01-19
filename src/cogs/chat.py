@@ -43,7 +43,7 @@ class ChatCommands(commands.Cog):
                     f"Bienvenue dans votre chat privé, {member.mention} !\n"
                     "Ce canal n'est visible que par vous et le bot.\n"
                     "Commandes disponibles :\n"
-                    "• `/token <access_token>` - Enregistrer un access token\n"
+                    "• `/token <token> <refresh_token>` - Enregistrer un access token\n"
                     "• `/view-tokens` - Voir vos tokens enregistrés et leur status\n"
                     "• `/remove-token` - Supprimer vos tokens"
                 )
