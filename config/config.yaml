@@ -1,0 +1,17 @@
+bot:
+  prefix: "!"
+  description: "PixelBot - Discord Bot"
+  activity_type: "playing"
+  activity_name: "with tokens"
+  token: "${DISCORD_TOKEN}"
+
+database:
+  host: "${DB_HOST}"
+  port: 5432
+  name: "${DB_NAME}"
+  user: "${DB_USER}"
+  password: "${DB_PASS}"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

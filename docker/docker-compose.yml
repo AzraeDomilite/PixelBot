@@ -1,0 +1,34 @@
+services:
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: discord-bot
+    env_file:
+      - ../.env
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ../:/app
+
+  db:
+    image: postgres:15
+    container_name: discord-db
+    environment:
+      POSTGRES_USER: botuser
+      POSTGRES_PASSWORD: botpassword
+      POSTGRES_DB: botdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botuser -d botdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
