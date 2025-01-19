@@ -10,13 +10,35 @@ class VoteService:
         self.db_pool = db_pool
         self.logger = get_logger(__name__)
         self.update_vote_counts.start()
+        self.current_vote_number = 1
 
     async def create_vote(self, guild: discord.Guild, title: str, image_name: str, image: discord.Attachment, json_data: dict, coord_x: int, coord_z: int, created_by: int) -> Optional[dict]:
         try:
-            # Vérifier/créer le salon de vote
-            vote_channel = discord.utils.get(guild.text_channels, name="votes")
+            # Trouver ou créer le salon de vote actuel
+            vote_channel = discord.utils.get(
+                guild.text_channels,
+                name=f"votes-{self.current_vote_number}"
+            )
+            
             if not vote_channel:
-                vote_channel = await guild.create_text_channel("votes")
+                overwrites = {
+                    guild.default_role: discord.PermissionOverwrite(
+                        send_messages=False,
+                        read_messages=True,
+                        add_reactions=True
+                    ),
+                    guild.me: discord.PermissionOverwrite(
+                        send_messages=True,
+                        read_messages=True,
+                        add_reactions=True,
+                        manage_messages=True
+                    )
+                }
+                
+                vote_channel = await guild.create_text_channel(
+                    f"votes-{self.current_vote_number}",
+                    overwrites=overwrites
+                )
 
             # Sauvegarder l'image
             image_url = image.url
@@ -79,3 +101,36 @@ class VoteService:
     @update_vote_counts.before_loop
     async def before_update_vote_counts(self):
         await self.bot.wait_until_ready()
+
+    async def get_winning_vote(self, conn) -> Optional[dict]:
+        """Récupère le vote gagnant de la session active"""
+        try:
+            winner = await conn.fetchrow("""
+                SELECT id, title, image_name, image_url, json_data, 
+                       coord_x, coord_z, vote_count
+                FROM votes 
+                WHERE is_active = true 
+                ORDER BY vote_count DESC 
+                LIMIT 1
+            """)
+            return winner
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération du gagnant: {e}")
+            return None
+
+    async def save_winning_pattern(self, conn, winner: dict) -> bool:
+        """Sauvegarde le pattern gagnant"""
+        try:
+            await conn.execute("""
+                INSERT INTO votes_pattern (
+                    title, image_name, image_url, json_data,
+                    coord_x, coord_z, vote_count, original_vote_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            """, winner['title'], winner['image_name'], 
+                winner['image_url'], winner['json_data'],
+                winner['coord_x'], winner['coord_z'], 
+                winner['vote_count'], winner['id'])
+            return True
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la sauvegarde du pattern: {e}")
+            return False

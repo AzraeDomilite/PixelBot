@@ -70,6 +70,19 @@ class Database:
                     
                     CREATE INDEX IF NOT EXISTS idx_user_tokens_valid_token 
                         ON user_tokens(valid_token);
+
+                    CREATE TABLE IF NOT EXISTS votes_pattern (
+                        id SERIAL PRIMARY KEY,
+                        title VARCHAR(255) NOT NULL,
+                        image_name VARCHAR(255) NOT NULL,
+                        image_url VARCHAR(512),
+                        json_data JSONB,
+                        coord_x INTEGER,
+                        coord_z INTEGER,
+                        vote_count INTEGER,
+                        original_vote_id INTEGER REFERENCES votes(id),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
                 """)
                 logger.info("Base de données initialisée avec succès")
                 
