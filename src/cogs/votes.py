@@ -121,11 +121,12 @@ class VoteCommands(commands.Cog):
     async def end_vote(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer(ephemeral=True)
-
+            
             # Récupérer le salon actuel
+            current_session = await self.vote_service.get_current_session()
             current_channel = discord.utils.get(
                 interaction.guild.text_channels,
-                name=f"votes-{self.current_vote_number}"
+                name=f"votes-{current_session}"
             )
 
             if current_channel:
@@ -165,15 +166,12 @@ class VoteCommands(commands.Cog):
                     overwrites[interaction.guild.default_role].update(add_reactions=False)
                     await current_channel.edit(overwrites=overwrites)
 
-                    # Désactiver tous les votes
-                    await conn.execute("UPDATE votes SET is_active = false WHERE is_active = true")
-
-            # Créer le nouveau salon pour la prochaine session
-            self.current_vote_number += 1
-            new_channel = await self.create_vote_channel(interaction.guild)
+            # Incrémenter la session et créer nouveau salon
+            new_session = await self.vote_service.increment_session()
+            new_channel = await self.vote_service.get_or_create_vote_channel(interaction.guild)
 
             await interaction.followup.send(
-                f"Session de vote terminée avec succès. Nouveau salon: {new_channel.mention}",
+                f"Session de vote terminée. Nouvelle session créée dans {new_channel.mention}",
                 ephemeral=True
             )
 
@@ -184,8 +182,11 @@ class VoteCommands(commands.Cog):
                 ephemeral=True
             )
 
-    async def create_vote_channel(self, guild: discord.Guild):
+    async def create_vote_channel(self, guild: discord.Guild, vote_number: int = None) -> discord.TextChannel:
         """Crée un nouveau salon de vote avec les permissions appropriées"""
+        if vote_number is None:
+            vote_number = await self.vote_service.get_current_vote_number()
+
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(
                 send_messages=False,
@@ -201,7 +202,7 @@ class VoteCommands(commands.Cog):
         }
         
         return await guild.create_text_channel(
-            f"votes-{self.current_vote_number}",
+            f"votes-{vote_number}",
             overwrites=overwrites
         )
 

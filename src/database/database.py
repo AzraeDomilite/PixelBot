@@ -51,15 +51,15 @@ class Database:
                         id SERIAL PRIMARY KEY,
                         title VARCHAR(255) NOT NULL,
                         image_name VARCHAR(255) NOT NULL,
-                        description TEXT,
                         image_url VARCHAR(512),
                         json_data JSONB,
                         channel_id BIGINT,
                         message_id BIGINT,
                         created_by BIGINT NOT NULL,
-                        coord_x INTEGER,           -- Ajout de cette colonne
-                        coord_z INTEGER,           -- Ajout de cette colonne
+                        coord_x INTEGER,
+                        coord_z INTEGER,
                         vote_count INT DEFAULT 0,
+                        session_id INTEGER NOT NULL,
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                         is_active BOOLEAN DEFAULT true
@@ -70,6 +70,9 @@ class Database:
                     
                     CREATE INDEX IF NOT EXISTS idx_user_tokens_valid_token 
                         ON user_tokens(valid_token);
+
+                    CREATE INDEX IF NOT EXISTS idx_votes_session_id 
+                        ON votes(session_id);
 
                     CREATE TABLE IF NOT EXISTS votes_pattern (
                         id SERIAL PRIMARY KEY,
@@ -83,6 +86,33 @@ class Database:
                         original_vote_id INTEGER REFERENCES votes(id),
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
+
+                    CREATE TABLE IF NOT EXISTS bot_state (
+                        key VARCHAR(255) PRIMARY KEY,
+                        value JSONB NOT NULL
+                    );
+
+                    CREATE TABLE IF NOT EXISTS vote_sessions (
+                        id SERIAL PRIMARY KEY,
+                        number INTEGER NOT NULL,
+                        is_active BOOLEAN DEFAULT true,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+
+                    -- Initialiser le compteur de vote s'il n'existe pas
+                    INSERT INTO bot_state (key, value)
+                    VALUES ('vote_number', '1'::jsonb)
+                    ON CONFLICT (key) DO NOTHING;
+
+                    -- Initialiser le compteur de session si n'existe pas
+                    INSERT INTO bot_state (key, value) 
+                    VALUES ('vote_session', '{"number": 1}'::jsonb)
+                    ON CONFLICT (key) DO NOTHING;
+
+                    -- Initialiser la première session si nécessaire
+                    INSERT INTO vote_sessions (number, is_active)
+                    VALUES (1, true)
+                    ON CONFLICT DO NOTHING;
                 """)
                 logger.info("Base de données initialisée avec succès")
                 
